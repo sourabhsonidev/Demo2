@@ -72,7 +72,7 @@ def unsafe_eval_violation(user_input_math):
     
     try:
         # User input could be a simple calculation, or malicious code.
-        result = eval(user_input_math)
+        result = ast.literal_eval(user_input_math)
         print(f"Result of eval(): {result}")
         print("Violation: Arbitrary code executed successfully.")
     except Exception as e:
