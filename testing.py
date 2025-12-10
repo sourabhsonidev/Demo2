@@ -10,7 +10,7 @@
 DB_PASSWORD_VIOLATION = "SuperSecurePa$$word123"
 DB_USER_VIOLATION = "admin_user"
 API_KEY_VIOLATION = "XYZ123ABC456DEF789GHI000"
-
+#database_pasword="test@1234"
 def connect_to_db_violation():
     """Simulates a database connection using hardcoded credentials."""
     print(f"--- Violation 1: Hardcoded Credentials ---")
