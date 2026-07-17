@@ -1,12 +1,3 @@
-# WARNING: This file contains known security vulnerabilities and is for educational purposes only.
-# DO NOT deploy code like this.
-
-### 1. Hardcoded Credentials (Violation: Poor Secrets Management)
-# Issue: Storing sensitive information directly in the source code is a major risk.
-# If the code is ever exposed (e.g., in a public repo), the credentials are leaked.
-# BEST PRACTICE: Use a secure secrets management tool (e.g., HashiCorp Vault, AWS Secrets Manager)
-# or inject secrets via environment variables for non-production environments.
-
 DB_PASSWORD_VIOLATION = "SuperSecurePa$$word123"
 DB_USER_VIOLATION = "admin_user"
 API_KEY_VIOLATION = "XYZ123ABC456DEF789GHI000"
@@ -18,11 +9,6 @@ def connect_to_db_violation():
     # In a real app, this would be the actual connection attempt
     print("Database connection simulated.")
 
-
-### 2. SQL Injection Vulnerability (Violation: Unsanitized User Input)
-# Issue: Directly embedding unsanitized user input into a SQL query string allows attackers
-# to manipulate the query, potentially accessing, modifying, or deleting unauthorized data.
-# BEST PRACTICE: Always use parameterized queries (prepared statements) provided by your database library.
 
 import sqlite3
 # Note: sqlite3 is used here for simplicity; the principle applies to all databases.
@@ -55,12 +41,36 @@ def unsafe_sql_query_violation(user_id):
         conn.close()
 
 
-### 3. Use of Unsafe 'eval()' (Violation: Arbitrary Code Execution)
-# Issue: The built-in `eval()` function executes Python code from a string. If the string
-# comes from an unverified source (like user input or an insecure configuration file), 
-# an attacker can execute arbitrary code on the host machine (Remote Code Execution/RCE).
-# BEST PRACTICE: Avoid `eval()`. Use safer alternatives like literal parsing (e.g., `ast.literal_eval`)
-# or a language-specific parser if you must handle external data in string format.
+import httpx
+from fastapi import HTTPException
+
+def fetch_upstream_resource_violation(resource_id):
+    url = f"https://api.example.com/resources/{resource_id}"
+    try:
+        response = httpx.get(url, timeout=5.0)
+        response.raise_for_status()
+        return response.json()
+    except httpx.HTTPStatusError as e:
+        print(f"Upstream returned an error: {e}")
+        raise HTTPException(status_code=502, detail="Upstream service failed")
+    except httpx.RequestError as e:
+        print(f"Failed to reach upstream service: {e}")
+        raise HTTPException(status_code=502, detail="Could not reach upstream service")
+
+
+def sync_user_profile_violation(user_id, payload):
+    def _normalize_payload(data):
+        return {k: v.strip() if isinstance(v, str) else v for k, v in data.items()}
+
+    normalized = _normalize_payload(payload)
+    url = f"https://api.example.com/users/{user_id}"
+    try:
+        response = httpx.put(url, json=normalized, timeout=10.0)
+        response.raise_for_status()
+    except httpx.HTTPStatusError:
+        raise HTTPException(status_code=502, detail="Failed to sync user profile")
+    return response.json()
+
 
 def unsafe_eval_violation(user_input_math):
     """
@@ -82,22 +92,18 @@ def unsafe_eval_violation(user_input_math):
 
 if __name__ == "__main__":
     
-    # Violation 1 Demonstration
+
     connect_to_db_violation()
     print("--- REMEDIATION: Store secrets in a secure vault/environment variables, NOT in code. ---")
     
-    # Violation 2 Demonstration
-    # This input is an exploit to bypass the WHERE clause
     malicious_input = "1 OR 1=1 --" 
     # The '--' comments out the rest of the original query, tricking the database.
     unsafe_sql_query_violation(malicious_input)
     print("--- REMEDIATION: Use parameterized queries to treat input as data, not code. ---")
-    
-    # Violation 3 Demonstration
-    # Normal use (still unsafe):
+
     unsafe_eval_violation("20 * 5 + 1")
     
-    # Malicious use (simulated RCE attempt):
+
     malicious_eval_input = "__import__('os').getenv('PATH')"
     unsafe_eval_violation(malicious_eval_input)
     print("--- REMEDIATION: NEVER use eval() on untrusted input. Use ast.literal_eval instead. ---")
